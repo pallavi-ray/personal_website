@@ -1,0 +1,11 @@
+{
+  "id": "adaptive-pneumatic",
+  "title": "Adaptive Pneumatic Structure",
+  "tags": ["Architecture", "Computation"],
+  "description": "A responsive inflatable structure system that adapts its form based on environmental input.",
+  "cover": "images/adaptive-pneumatic.jpg",
+  "links": [
+    { "label": "GitHub repo", "url": "https://github.com/pallavi-ray/adaptive-pneumatic" }
+  ],
+  "content": "<p>Full write-up goes here.</p>"
+}

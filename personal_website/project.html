@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project — Pallavi Ray</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0d0e12;
+    --bg-soft: #14161c;
+    --text: #eee9e2;
+    --text-dim: #8b8d94;
+    --line: #23262e;
+    --accent: #e8a765;
+  }
+  *{ box-sizing: border-box; }
+  html, body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+  }
+  header{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 28px 40px;
+    border-bottom: 1px solid var(--line);
+  }
+  .logo{
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .logo span{ color: var(--accent); }
+  nav a{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    text-decoration: none;
+    margin-left: 24px;
+    border-bottom: 1px solid transparent;
+  }
+  nav a:hover{ color: var(--text); border-color: var(--accent); }
+
+  main{
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 64px 24px 120px 24px;
+  }
+  .eyebrow{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+  h1{
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(28px, 5vw, 44px);
+    line-height: 1.1;
+    margin: 0 0 20px 0;
+  }
+  .tags{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 32px;
+  }
+  .tags span{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    border: 1px solid var(--line);
+    padding: 5px 10px;
+    border-radius: 3px;
+  }
+  .cover{
+    width: 100%;
+    border-radius: 6px;
+    margin-bottom: 36px;
+    display: none;
+    border: 1px solid var(--line);
+  }
+  .description{
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--text-dim);
+    margin-bottom: 32px;
+  }
+  .content{
+    font-size: 15px;
+    line-height: 1.8;
+    color: var(--text);
+  }
+  .content p{ margin: 0 0 18px 0; }
+  .links{
+    margin-top: 40px;
+    padding-top: 28px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .links a{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text);
+    text-decoration: none;
+    border-bottom: 1px solid var(--accent);
+    padding-bottom: 2px;
+  }
+  .links a:hover{ color: var(--accent); }
+  .not-found{
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="logo">pallavi<span>.</span>ray</a>
+  <nav>
+    <a href="index.html">graph</a>
+    <a href="about.html">about.</a>
+  </nav>
+</header>
+
+<main id="main">
+  <p class="eyebrow">loading…</p>
+</main>
+
+<script>
+async function loadProject(){
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id");
+  const main = document.getElementById("main");
+
+  if (!id){
+    main.innerHTML = '<p class="not-found">no project specified. <a href="index.html" style="color:var(--accent)">back to graph →</a></p>';
+    return;
+  }
+
+  try{
+    const res = await fetch(`projects/${id}.json`);
+    if (!res.ok) throw new Error("not found");
+    const p = await res.json();
+
+    document.title = p.title + " — Pallavi Ray";
+
+    const tagsHtml = (p.tags || []).map(t => `<span>${t}</span>`).join("");
+    const linksHtml = (p.links || []).map(l => `<a href="${l.url}" target="_blank" rel="noopener">${l.label} →</a>`).join("");
+
+    main.innerHTML = `
+      <p class="eyebrow">project</p>
+      <h1>${p.title}</h1>
+      <div class="tags">${tagsHtml}</div>
+      ${p.cover ? `<img class="cover" src="${p.cover}" alt="${p.title}" style="display:block" onerror="this.style.display='none'">` : ""}
+      <p class="description">${p.description || ""}</p>
+      <div class="content">${p.content || ""}</div>
+      ${linksHtml ? `<div class="links">${linksHtml}</div>` : ""}
+    `;
+  } catch(err){
+    main.innerHTML = `<p class="not-found">couldn't find a project called "${id}". <a href="index.html" style="color:var(--accent)">back to graph →</a></p>`;
+  }
+}
+loadProject();
+</script>
+
+</body>
+</html>

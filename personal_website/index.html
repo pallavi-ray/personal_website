@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pallavi Ray</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  :root{
+    --bg: #0d0e12;
+    --bg-soft: #14161c;
+    --text: #eee9e2;
+    --text-dim: #8b8d94;
+    --line: #23262e;
+    --node-project: #c98a5e;
+    --node-project-dim: #6e4f3a;
+    --node-tag: #5b6472;
+    --node-tag-dim: #33383f;
+    --node-center: #eee9e2;
+    --accent: #e8a765;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ---------- NAV ---------- */
+  header{
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 28px 40px;
+    z-index: 50;
+    pointer-events: none;
+  }
+  header *{ pointer-events: auto; }
+
+  .logo{
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .logo span{ color: var(--accent); }
+
+  nav a{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    text-decoration: none;
+    margin-left: 28px;
+    text-transform: lowercase;
+    border-bottom: 1px solid transparent;
+    transition: color 0.25s ease, border-color 0.25s ease;
+  }
+  nav a:hover, nav a:focus-visible{
+    color: var(--text);
+    border-color: var(--accent);
+  }
+
+  /* ---------- HERO TEXT ---------- */
+  .intro{
+    position: fixed;
+    left: 40px;
+    top: 96px;
+    max-width: 340px;
+    z-index: 40;
+    pointer-events: none;
+  }
+  .intro h1{
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(28px, 4vw, 40px);
+    line-height: 1.1;
+    margin: 0 0 12px 0;
+    letter-spacing: -0.01em;
+  }
+  .intro p{
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-dim);
+    margin: 0;
+  }
+  .intro .hint{
+    margin-top: 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    opacity: 0.7;
+    letter-spacing: 0.03em;
+  }
+
+  /* ---------- GRAPH ---------- */
+  #graph{
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    display: block;
+    cursor: grab;
+  }
+  #graph:active{ cursor: grabbing; }
+
+  .link{
+    stroke: var(--line);
+    stroke-width: 1px;
+  }
+  .link.highlight{
+    stroke: var(--accent);
+    stroke-width: 1.4px;
+    opacity: 0.9;
+  }
+
+  .node circle{
+    stroke: var(--bg);
+    stroke-width: 2px;
+    transition: filter 0.2s ease;
+  }
+  .node.center circle{ fill: var(--node-center); }
+  .node.project circle{ fill: var(--node-project); }
+  .node.tag circle{ fill: var(--node-tag); }
+
+  .node.dim circle{ opacity: 0.25; }
+  .node.dim text{ opacity: 0.15; }
+
+  .node.active circle{
+    fill: var(--accent);
+    filter: drop-shadow(0 0 8px rgba(232,167,101,0.7));
+  }
+
+  .node text{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    fill: var(--text-dim);
+    pointer-events: none;
+    transition: fill 0.2s ease, opacity 0.2s ease;
+  }
+  .node.center text{
+    fill: var(--text);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .node.active text{ fill: var(--text); }
+  .node{ cursor: pointer; }
+
+  /* ---------- SIDE PANEL ---------- */
+  #panel{
+    position: fixed;
+    top: 0;
+    right: -380px;
+    width: 340px;
+    height: 100%;
+    background: var(--bg-soft);
+    border-left: 1px solid var(--line);
+    padding: 100px 32px 32px 32px;
+    z-index: 60;
+    transition: right 0.4s cubic-bezier(.19,1,.22,1);
+    overflow-y: auto;
+  }
+  #panel.open{ right: 0; }
+
+  #panel .close{
+    position: absolute;
+    top: 28px;
+    right: 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  #panel .close:hover{ color: var(--text); }
+
+  #panel .eyebrow{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  #panel h2{
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    margin: 0 0 14px 0;
+    line-height: 1.2;
+  }
+  #panel p{
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--text-dim);
+    margin: 0 0 18px 0;
+  }
+  #panel .tags{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 22px;
+  }
+  #panel .tags span{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    border: 1px solid var(--line);
+    padding: 4px 8px;
+    border-radius: 3px;
+  }
+  #panel a.repo-link{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    text-decoration: none;
+    border-bottom: 1px solid var(--accent);
+    padding-bottom: 2px;
+  }
+  #panel a.repo-link:hover{ color: var(--accent); }
+
+  /* ---------- FOOTER NOTE ---------- */
+  .corner-note{
+    position: fixed;
+    bottom: 24px;
+    left: 40px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--text-dim);
+    opacity: 0.5;
+    z-index: 40;
+    pointer-events: none;
+  }
+
+  @media (max-width: 720px){
+    .intro{ max-width: 78vw; top: 90px; left: 20px; }
+    header{ padding: 20px; }
+    #panel{ width: 86vw; right: -90vw; }
+    .corner-note{ left: 20px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="logo">pallavi<span>.</span>ray</a>
+  <nav>
+    <a href="about.html">about.</a>
+  </nav>
+</header>
+
+<div class="intro">
+  <h1>work, mapped<br>as it connects.</h1>
+  <p>Projects across architecture, computation, and code — shown here the way they actually relate to each other, not as a list.</p>
+  <p class="hint">drag nodes · hover to trace connections · click a project to open it</p>
+</div>
+
+<svg id="graph"></svg>
+
+<div id="panel">
+  <button class="close" id="panelClose">close ✕</button>
+  <div class="eyebrow" id="panelEyebrow">project</div>
+  <h2 id="panelTitle">—</h2>
+  <p id="panelDesc">—</p>
+  <div class="tags" id="panelTags"></div>
+  <a class="repo-link" id="panelLink" href="#" target="_blank" rel="noopener">view on github →</a>
+</div>
+
+<div class="corner-note">reads from /projects/ — add a file there to add a project</div>
+
+<script>
+/* =====================================================================
+   PROJECT DATA
+   ---------------------------------------------------------------------
+   Projects now live as individual files in /projects/, one JSON file
+   per project (e.g. projects/timber-gridshell.json), listed in
+   projects/manifest.json.
+
+   To add a project:
+     1. Create projects/your-project-id.json with:
+          { "id", "title", "tags": [...], "description", "cover", "links": [...] }
+     2. Add "your-project-id" to projects/manifest.json
+   That's it — the graph, tags, and detail page all update automatically.
+===================================================================== */
+const centerNode = { id: "pallavi", label: "Pallavi Ray", type: "center" };
+
+async function loadProjects(){
+  const manifestRes = await fetch("projects/manifest.json");
+  const ids = await manifestRes.json();
+  const projects = await Promise.all(
+    ids.map(id => fetch(`projects/${id}.json`).then(r => r.json()))
+  );
+  return projects;
+}
+
+loadProjects()
+  .then(projects => buildGraph(projects))
+  .catch(err => {
+    document.querySelector(".corner-note").textContent =
+      "couldn't load projects/manifest.json — if you're opening this file directly (file://), " +
+      "run a local server instead, e.g. `python3 -m http.server` then open localhost. " +
+      "GitHub Pages serves this correctly on its own.";
+    console.error(err);
+  });
+
+function buildGraph(projects){
+
+// normalize field name (project.json uses "title", graph code expects "name")
+projects.forEach(p => { p.name = p.name || p.title; p.url = p.url || (p.links && p.links[0] && p.links[0].url) || "#"; });
+
+// Build tag nodes from the unique tags referenced across all projects
+const tagNames = [...new Set(projects.flatMap(p => p.tags || []))];
+
+const nodes = [
+  centerNode,
+  ...projects.map(p => ({ id: p.id, label: p.name, type: "project", data: p })),
+  ...tagNames.map(t => ({ id: "tag-" + t, label: t, type: "tag" }))
+];
+
+const links = [];
+projects.forEach(p => {
+  links.push({ source: centerNode.id, target: p.id });
+  (p.tags || []).forEach(t => links.push({ source: p.id, target: "tag-" + t }));
+});
+
+// ---------------------------------------------------------------------
+// D3 FORCE GRAPH
+// ---------------------------------------------------------------------
+const svg = d3.select("#graph");
+let width = window.innerWidth;
+let height = window.innerHeight;
+svg.attr("width", width).attr("height", height);
+
+const container = svg.append("g");
+
+// zoom/pan
+svg.call(d3.zoom().scaleExtent([0.4, 2.5]).on("zoom", (event) => {
+  container.attr("transform", event.transform);
+}));
+
+const simulation = d3.forceSimulation(nodes)
+  .force("link", d3.forceLink(links).id(d => d.id).distance(d => {
+    if (d.source.type === "center" || d.target.type === "center") return 170;
+    return 90;
+  }).strength(0.7))
+  .force("charge", d3.forceManyBody().strength(-260))
+  .force("center", d3.forceCenter(width / 2, height / 2))
+  .force("collide", d3.forceCollide().radius(d => radiusFor(d) + 24));
+
+function radiusFor(d){
+  if (d.type === "center") return 9;
+  if (d.type === "project") return 6.5;
+  return 4.5;
+}
+
+const link = container.append("g")
+  .selectAll("line")
+  .data(links)
+  .join("line")
+  .attr("class", "link");
+
+const node = container.append("g")
+  .selectAll("g")
+  .data(nodes)
+  .join("g")
+  .attr("class", d => "node " + d.type)
+  .call(drag(simulation));
+
+node.append("circle")
+  .attr("r", radiusFor);
+
+node.append("text")
+  .attr("x", d => radiusFor(d) + 8)
+  .attr("y", 4)
+  .text(d => d.label);
+
+simulation.on("tick", () => {
+  link
+    .attr("x1", d => d.source.x)
+    .attr("y1", d => d.source.y)
+    .attr("x2", d => d.target.x)
+    .attr("y2", d => d.target.y);
+
+  node.attr("transform", d => `translate(${d.x},${d.y})`);
+});
+
+// ---------------------------------------------------------------------
+// INTERACTION: hover highlight + click to open panel
+// ---------------------------------------------------------------------
+const neighborMap = new Map();
+nodes.forEach(n => neighborMap.set(n.id, new Set([n.id])));
+links.forEach(l => {
+  const s = typeof l.source === "object" ? l.source.id : l.source;
+  const t = typeof l.target === "object" ? l.target.id : l.target;
+  neighborMap.get(s).add(t);
+  neighborMap.get(t).add(s);
+});
+
+node.on("mouseenter", (event, d) => {
+  const neighbors = neighborMap.get(d.id);
+  node.classed("dim", n => !neighbors.has(n.id));
+  link.classed("highlight", l => {
+    const s = typeof l.source === "object" ? l.source.id : l.source;
+    const t = typeof l.target === "object" ? l.target.id : l.target;
+    return s === d.id || t === d.id;
+  });
+});
+
+node.on("mouseleave", () => {
+  node.classed("dim", false);
+  link.classed("highlight", false);
+});
+
+node.on("click", (event, d) => {
+  node.classed("active", n => n.id === d.id);
+  if (d.type === "project") openPanel(d.data);
+  else if (d.type === "tag"){
+    // highlight all projects with this tag
+    const related = new Set(projects.filter(p => p.tags.includes(d.label)).map(p => p.id));
+    related.add(d.id);
+    node.classed("dim", n => !related.has(n.id) && n.id !== centerNode.id);
+  }
+});
+
+svg.on("click", (event) => {
+  if (event.target.tagName === "svg"){
+    node.classed("active", false).classed("dim", false);
+    link.classed("highlight", false);
+    closePanel();
+  }
+});
+
+function drag(sim){
+  function dragstarted(event, d){
+    if (!event.active) sim.alphaTarget(0.25).restart();
+    d.fx = d.x; d.fy = d.y;
+  }
+  function dragged(event, d){
+    d.fx = event.x; d.fy = event.y;
+  }
+  function dragended(event, d){
+    if (!event.active) sim.alphaTarget(0);
+    d.fx = null; d.fy = null;
+  }
+  return d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended);
+}
+
+// ---------------------------------------------------------------------
+// SIDE PANEL
+// ---------------------------------------------------------------------
+const panel = document.getElementById("panel");
+function openPanel(p){
+  document.getElementById("panelTitle").textContent = p.title || p.name;
+  document.getElementById("panelDesc").textContent = p.description || p.desc || "";
+  document.getElementById("panelLink").href = `project.html?id=${p.id}`;
+  document.getElementById("panelLink").target = "_self";
+  document.getElementById("panelLink").textContent = "open project page →";
+  const tagsEl = document.getElementById("panelTags");
+  tagsEl.innerHTML = "";
+  (p.tags || []).forEach(t => {
+    const s = document.createElement("span");
+    s.textContent = t;
+    tagsEl.appendChild(s);
+  });
+  panel.classList.add("open");
+}
+function closePanel(){ panel.classList.remove("open"); }
+document.getElementById("panelClose").addEventListener("click", (e) => {
+  e.stopPropagation();
+  closePanel();
+  node.classed("active", false);
+});
+
+// ---------------------------------------------------------------------
+// RESIZE
+// ---------------------------------------------------------------------
+window.addEventListener("resize", () => {
+  width = window.innerWidth;
+  height = window.innerHeight;
+  svg.attr("width", width).attr("height", height);
+  simulation.force("center", d3.forceCenter(width / 2, height / 2));
+  simulation.alpha(0.3).restart();
+});
+
+} // end buildGraph
+</script>
+
+</body>
+</html>

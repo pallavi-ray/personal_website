@@ -1,0 +1,11 @@
+{
+  "id": "switchapp",
+  "title": "Switchapp",
+  "tags": ["Code", "Product"],
+  "description": "A small web application prototype — interaction design meets front-end code.",
+  "cover": "images/switchapp.jpg",
+  "links": [
+    { "label": "GitHub repo", "url": "https://github.com/pallavi-ray/switchapp" }
+  ],
+  "content": "<p>Full write-up goes here.</p>"
+}
