@@ -1,0 +1,11 @@
+{
+  "id": "timber-gridshell",
+  "title": "Timber GridShell",
+  "tags": ["Architecture", "Fabrication"],
+  "description": "Structural design and digital fabrication of a bending-active timber gridshell.",
+  "cover": "images/timber-gridshell.jpg",
+  "links": [
+    { "label": "GitHub repo", "url": "https://github.com/pallavi-ray/timber-gridshell" }
+  ],
+  "content": "<p>Full write-up goes here.</p>"
+}
